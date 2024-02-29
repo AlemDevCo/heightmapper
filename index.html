@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elevation Downloader</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        #map {
+            height: 500px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Elevation Downloader</h1>
+    <div id="map"></div>
+    <button id="downloadButton" onclick="downloadElevationData()">Download Elevation Data</button>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        var map = L.map('map').setView([51.505, -0.09], 13); // Default view at London
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        var marker;
+
+        function onMapClick(e) {
+            if (marker) {
+                map.removeLayer(marker);
+            }
+            marker = L.marker(e.latlng).addTo(map);
+        }
+
+        map.on('click', onMapClick);
+
+        async function downloadElevationData() {
+            if (!marker) {
+                alert('Please select a location on the map.');
+                return;
+            }
+
+            const lat = marker.getLatLng().lat;
+            const lng = marker.getLatLng().lng;
+
+            const elevationData = await fetchElevationData(lat, lng);
+            console.log('Elevation data:', elevationData);
+
+            // Here you can do something with the elevation data, such as downloading it
+            // For simplicity, let's just log it to the console
+        }
+
+        async function fetchElevationData(lat, lng) {
+            const url = `https://portal.opentopography.org/API/globaldem?demtype=SRTMGL3&west=${lng - 0.01}&south=${lat - 0.01}&east=${lng + 0.01}&north=${lat + 0.01}&outputFormat=ASC`;
+
+            try {
+                const response = await fetch(url);
+                const data = await response.text();
+                // Parse the ASCII data (elevation values separated by whitespace)
+                const elevationValues = data.trim().split(/\s+/).map(parseFloat);
+                return elevationValues;
+            } catch (error) {
+                console.error('Error fetching elevation data:', error);
+                return [];
+            }
+        }
+    </script>
+</body>
+</html>
